@@ -36,3 +36,37 @@ def test_vertex_llm_parses_schema_and_counts_usage() -> None:
     assert usage.inr > 0
     cfg = models.calls[0]["config"]
     assert cfg.response_mime_type == "application/json"
+
+
+def test_gemini_api_key_client_uses_key_not_vertex() -> None:
+    llm = VertexLLM(api_key="test-key")
+    assert llm._client._api_client.api_key == "test-key"  # type: ignore[attr-defined]
+    assert not llm._client._api_client.vertexai  # type: ignore[attr-defined]
+
+
+def test_retries_on_quota_then_succeeds(monkeypatch: object) -> None:
+    from google.genai import errors
+
+    import app.agents.llm as llm_mod
+
+    async def no_sleep(_: float) -> None:
+        return None
+
+    monkeypatch.setattr(llm_mod.asyncio, "sleep", no_sleep)  # type: ignore[attr-defined]
+
+    calls = {"n": 0}
+
+    class _Models:
+        async def generate_content(self, **_: Any) -> Any:
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise errors.ClientError(429, {"error": {"message": "quota"}}, None)
+            return SimpleNamespace(
+                text='{"ok": true}',
+                usage_metadata=SimpleNamespace(prompt_token_count=1, candidates_token_count=1),
+            )
+
+    llm = VertexLLM(client=SimpleNamespace(aio=SimpleNamespace(models=_Models())))
+    out, _ = asyncio.run(llm.structured("gemini-2.5-flash", "s", "u", Verdict))
+    assert out == Verdict(ok=True)
+    assert calls["n"] == 3

@@ -12,3 +12,8 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+
+# local secrets
+*.env
+.env*
+!.env.example

@@ -6,6 +6,7 @@ Measures speed only. Accuracy is never scored on synthetic data.
 
 import argparse
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -13,7 +14,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from app.agents.llm import FakeLLM
+from app.agents.llm import FakeLLM, VertexLLM
 from app.agents.roles import ResolverOut
 from app.guard.budget import Budget
 from app.ingest.books import parse_books
@@ -34,7 +35,7 @@ def _sha() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--size", type=int, default=1000)
-    parser.add_argument("--llm", choices=["fake"], default="fake")
+    parser.add_argument("--llm", choices=["fake", "gemini"], default="fake")
     parser.add_argument("--seed", type=int, default=1)
     args = parser.parse_args()
 
@@ -49,13 +50,20 @@ def main() -> None:
         bs = parse_books((base / "books.csv").read_bytes(), "books.csv")
         ingest_ms = (time.perf_counter() - t1) * 1000
 
-    llm = FakeLLM(
-        {
-            ResolverOut: ResolverOut(
-                row_key="x", likely_cause="unknown", explanation="bench", suggested_action="none"
-            )
-        }
-    )
+    llm: FakeLLM | VertexLLM
+    if args.llm == "gemini":
+        llm = VertexLLM(api_key=os.environ["GEMINI_API_KEY"])
+    else:
+        llm = FakeLLM(
+            {
+                ResolverOut: ResolverOut(
+                    row_key="x",
+                    likely_cause="unknown",
+                    explanation="bench",
+                    suggested_action="none",
+                )
+            }
+        )
     deps = Deps(llm=llm, budget=Budget(10**12, Decimal(10**9)), firm_id="bench")
     t2 = time.perf_counter()
     state = run_pipeline(f"bench-{time.time_ns()}", gs, bs, "2026-11", deps)
@@ -77,7 +85,7 @@ def main() -> None:
         },
         "pipeline_ms": round(e2e_ms, 1),
         "invoices_per_sec": round(args.size / max(e2e_ms / 1000, 1e-9), 1),
-        "llm_calls": len(llm.calls),
+        "llm_calls": len(llm.calls) if isinstance(llm, FakeLLM) else None,
         "counts_by_verdict": counts,
     }
     RESULTS.mkdir(parents=True, exist_ok=True)

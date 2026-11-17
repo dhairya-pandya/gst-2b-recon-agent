@@ -1,3 +1,4 @@
+import asyncio
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -72,17 +73,45 @@ def stage(name: str, timings: dict[str, float]) -> Iterator[None]:
         timings[name] = timings.get(name, 0.0) + (time.perf_counter() - start) * 1000
 
 
+RETRY_STATUSES = {429, 503}
+MAX_RETRIES = 6
+
+
 class VertexLLM:
-    """Gemini via Vertex AI (google-genai SDK). Requires GCP project and ADC credentials."""
+    """Gemini via google-genai. Either Vertex AI (project + ADC) or the Gemini Developer API
+    (API key, no billing needed for Flash). Same interface either way."""
 
     def __init__(
-        self, client: Any | None = None, project: str | None = None, location: str = "asia-south1"
+        self,
+        client: Any | None = None,
+        project: str | None = None,
+        location: str = "asia-south1",
+        api_key: str | None = None,
     ) -> None:
         if client is None:
             from google import genai
 
-            client = genai.Client(vertexai=True, project=project, location=location)
+            if api_key:
+                client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
+            else:
+                client = genai.Client(vertexai=True, project=project, location=location)
         self._client = client
+
+    async def _generate_with_retry(self, **kwargs: Any) -> Any:
+        """Back off and retry on quota (429) and transient (503) errors. Free tier allows
+        5 requests per minute for Flash, so bursts must wait rather than fail the run."""
+        from google.genai import errors
+
+        delay = 15.0
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                return await self._client.aio.models.generate_content(**kwargs)
+            except errors.APIError as exc:
+                if exc.code not in RETRY_STATUSES or attempt == MAX_RETRIES:
+                    raise
+                await asyncio.sleep(delay)
+                delay = min(delay * 2, 90.0)
+        raise RuntimeError("unreachable")
 
     async def structured(
         self, model: str, system: str, user: str, schema: type[T]
@@ -90,7 +119,7 @@ class VertexLLM:
         from google.genai import types
 
         start = time.perf_counter()
-        resp = await self._client.aio.models.generate_content(
+        resp = await self._generate_with_retry(
             model=model,
             contents=user,
             config=types.GenerateContentConfig(
