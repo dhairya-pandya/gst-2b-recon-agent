@@ -1,0 +1,14 @@
+[
+  {"citation": "CGST Act s.16(2)", "source": "CGST Act 2017",
+   "body": "ITC is available only if the recipient holds a tax invoice or debit note, the supplier has paid the tax to the government, and the goods or services were received."},
+  {"citation": "CGST Act s.17(5)(b)", "source": "CGST Act 2017",
+   "body": "ITC is blocked on goods or services used for personal consumption, and on certain categories listed as blocked credits."},
+  {"citation": "CGST Rules 36(4)", "source": "CGST Rules 2017",
+   "body": "ITC is available only to the extent of invoices or debit notes that appear in the recipient's GSTR-2B for the period."},
+  {"citation": "CGST Rules 37", "source": "CGST Rules 2017",
+   "body": "If the supplier is not paid within 180 days of the invoice date, the ITC claimed must be reversed with interest."},
+  {"citation": "CGST Rules 42", "source": "CGST Rules 2017",
+   "body": "Credit must be reversed proportionately for inputs used in both taxable and exempt supplies."},
+  {"citation": "Circular 183/15/2022-GST", "source": "CBIC Circular",
+   "body": "Clarifies ITC matching against GSTR-2B and the treatment of differences in invoice details."}
+]
