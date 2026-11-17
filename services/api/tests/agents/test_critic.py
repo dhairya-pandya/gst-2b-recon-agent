@@ -10,8 +10,12 @@ def _row() -> MatchResult:
     return MatchResult(
         verdict=Verdict.PARTIAL,
         gstr2b=Gstr2bRow(
-            supplier_gstin="29AAACB1234F1Z5", invoice_no="A1", invoice_date=date(2026, 11, 5),
-            taxable_value=Decimal("1000"), tax=TaxAmounts(igst=Decimal("180")), period="2026-11",
+            supplier_gstin="29AAACB1234F1Z5",
+            invoice_no="A1",
+            invoice_date=date(2026, 11, 5),
+            taxable_value=Decimal("1000"),
+            tax=TaxAmounts(igst=Decimal("180")),
+            period="2026-11",
         ),
     )
 

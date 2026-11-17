@@ -16,9 +16,11 @@ def test_parse_books_csv() -> None:
 
 
 def test_parse_books_bad_date_raises() -> None:
-    bad = b"supplier_gstin,invoice_no,invoice_date,taxable_value,igst,cgst,sgst,cess\n" \
-          b"29AAACB1234F1Z5,A1,05-11-2026,1,0,0,0,0\n" \
-          b"29AAACB1234F1Z5,A2,2026/11/05,1,0,0,0,0\n"
+    bad = (
+        b"supplier_gstin,invoice_no,invoice_date,taxable_value,igst,cgst,sgst,cess\n"
+        b"29AAACB1234F1Z5,A1,05-11-2026,1,0,0,0,0\n"
+        b"29AAACB1234F1Z5,A2,2026/11/05,1,0,0,0,0\n"
+    )
     with pytest.raises(IngestError) as exc:
         parse_books(bad, "bad.csv")
     assert exc.value.field == "invoice_date"

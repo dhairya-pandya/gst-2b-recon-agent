@@ -72,8 +72,9 @@ def match(gstr2b: list[Gstr2bRow], books: list[BookRow], period: str) -> list[Ma
     for book in books:
         k = _key(book.supplier_gstin, book.invoice_no)
         if k in seen:
-            results.append(MatchResult(verdict=Verdict.DUPLICATE, book=book,
-                                       reasons=["duplicate_in_books"]))
+            results.append(
+                MatchResult(verdict=Verdict.DUPLICATE, book=book, reasons=["duplicate_in_books"])
+            )
         else:
             seen[k] = book
             unique_books.append(book)
@@ -114,8 +115,9 @@ def match(gstr2b: list[Gstr2bRow], books: list[BookRow], period: str) -> list[Ma
         reasons = ["gstin_branch"]
         if row.supplier_gstin.strip().upper() == candidate.supplier_gstin.strip().upper():
             reasons = []
-        results.append(MatchResult(verdict=Verdict.PARTIAL, gstr2b=row, book=candidate,
-                                   reasons=reasons))
+        results.append(
+            MatchResult(verdict=Verdict.PARTIAL, gstr2b=row, book=candidate, reasons=reasons)
+        )
 
     for row in still_2b:
         results.append(MatchResult(verdict=Verdict.MISSING_IN_BOOKS, gstr2b=row))
@@ -136,4 +138,3 @@ def _pair(row: Gstr2bRow, b: BookRow, period: str) -> MatchResult | None:
         reasons.append("amount_gap")
     verdict = Verdict.MATCHED if within_head and not reasons else Verdict.PARTIAL
     return MatchResult(verdict=verdict, gstr2b=row, book=b, reasons=reasons, amount_gap=gap)
-

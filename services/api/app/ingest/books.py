@@ -5,8 +5,14 @@ from app.ingest.gstr2b import dec, parse_date
 from app.models import BookRow, IngestError, TaxAmounts
 
 REQUIRED = [
-    "supplier_gstin", "invoice_no", "invoice_date",
-    "taxable_value", "igst", "cgst", "sgst", "cess",
+    "supplier_gstin",
+    "invoice_no",
+    "invoice_date",
+    "taxable_value",
+    "igst",
+    "cgst",
+    "sgst",
+    "cess",
 ]
 
 
