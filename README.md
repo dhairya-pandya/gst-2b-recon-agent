@@ -2,7 +2,7 @@
 
 Multi-agent system that reconciles a client's GSTR-2B against its purchase register and invoice PDFs, flags ITC mismatches, and drafts supplier follow-ups. Built for Indian CA firms.
 
-**Status:** backend core, web design system and benchmark harness built and tested. Database, web sign-in and deploy are not finished — see the status table below.
+**Status:** backend, database security (row-level security verified locally), web app and benchmark harness built and tested. Live cloud services (Google sign-in, Vertex AI, Cloud Run) are not yet connected — see the status table below.
 
 ## Problem
 
@@ -35,13 +35,13 @@ Reproduce: `cd services/api && uv run python -m benchmarks.run --size 20000`
 | Normalisation and matcher | Built, tested |
 | LangGraph pipeline, budgets, checkpoints | Built, tested (fake LLM) |
 | Guardrails (scope, PII, rate limit, injection stripping) | Built, tested as logic; not yet wired into all HTTP routes |
-| Auth and run endpoints | Built, tested with an in-memory store |
-| Supabase schema and row-level security | Written; not yet tested against a live database |
+| Auth, run, row-question and review endpoints | Built, tested; run data still in memory (not yet on Postgres) |
+| Supabase schema and row-level security | Built and verified against a local Supabase: 4 RLS tests pass (cross-firm reads and writes blocked) |
 | Legal corpus RAG | Built with a hash embedder; corpus text is paraphrased and awaits verification |
-| Web design system and reconciliation row | Built, tested |
-| Sign-in (Google / email), full screens | Not built |
-| Vertex AI calls and LLM benchmarks | Not run |
-| Cloud Run deploy | Dockerfile written; not built or deployed |
+| Web design system, sign-in page, reconciliation table, run page | Built, tested (15 web tests); sign-in page renders in browser |
+| Google and email sign-in end to end | Email and Google flows are coded; not exercised against a real Supabase project or Google OAuth client |
+| Vertex AI calls and LLM benchmarks | Client written and unit-tested with a mock; no live calls run yet (needs GCP project) |
+| Cloud Run deploy | Image builds locally; health and token checks pass in the container; not deployed (needs GCP project) |
 
 ## Layout
 
