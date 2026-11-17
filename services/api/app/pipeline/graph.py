@@ -123,7 +123,8 @@ def run_pipeline(
     config = {"configurable": {"thread_id": thread_id}}
     snapshot = graph.get_state(config)
     if snapshot.values and not snapshot.next:
-        return PipelineState(**snapshot.values)  # finished: return saved result, no rerun
+        saved: PipelineState = dict(snapshot.values)  # type: ignore[assignment]
+        return saved  # finished: return saved result, no rerun
     payload: dict[str, Any] | None = None
     if not snapshot.values:
         payload = {
