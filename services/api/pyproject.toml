@@ -11,6 +11,8 @@ dependencies = [
   "pdfplumber>=0.11.10",
   "rapidfuzz>=3.14.6",
   "langgraph>=1.2.22",
+  "pyjwt>=2.15.1",
+  "python-multipart>=0.0.34",
 ]
 
 [dependency-groups]
@@ -29,6 +31,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/main.py" = ["B008"]  # FastAPI Form/File defaults are idiomatic
 
 [tool.mypy]
 strict = true
