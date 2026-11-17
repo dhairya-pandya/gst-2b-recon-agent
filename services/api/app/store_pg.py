@@ -19,7 +19,7 @@ class PgStore:
         with psycopg.connect(self._dsn, autocommit=True) as conn:
             conn.execute("set role authenticated")
             conn.execute(
-                "select set_config('request.jwt.claims', %s, true)",
+                "select set_config('request.jwt.claims', %s, false)",
                 (json.dumps({"sub": user_id, "role": "authenticated"}),),
             )
             yield conn
