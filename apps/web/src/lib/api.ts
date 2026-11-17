@@ -3,6 +3,7 @@ export type ApiOptions = {
   base?: string;
   method?: "GET" | "POST";
   body?: BodyInit;
+  json?: unknown;
 };
 
 export class ApiError extends Error {
@@ -16,10 +17,16 @@ export class ApiError extends Error {
 
 export async function apiFetch(path: string, opts: ApiOptions): Promise<unknown> {
   const base = opts.base ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  const headers: Record<string, string> = { Authorization: `Bearer ${opts.token}` };
+  let body: BodyInit | undefined = opts.body;
+  if (opts.json !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(opts.json);
+  }
   const res = await fetch(`${base}${path}`, {
     method: opts.method ?? "GET",
-    body: opts.body,
-    headers: { Authorization: `Bearer ${opts.token}` },
+    body,
+    headers,
   });
   const json: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {

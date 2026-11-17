@@ -18,3 +18,14 @@ describe("apiFetch", () => {
     await expect(apiFetch("/runs", { token: "t", base: "http://x" })).rejects.toThrow(/inum/);
   });
 });
+
+describe("apiFetch JSON bodies", () => {
+  it("sends JSON with a content-type header", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await apiFetch("/clients", { token: "t", base: "http://api.test", method: "POST", json: { name: "A" } });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
+    expect(init.body).toBe('{"name":"A"}');
+  });
+});
