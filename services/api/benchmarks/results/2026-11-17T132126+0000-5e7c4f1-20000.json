@@ -1,0 +1,23 @@
+{
+  "when": "2026-11-17T13:21:26+00:00",
+  "sha": "5e7c4f1",
+  "size_invoices": 20000,
+  "llm": "fake",
+  "stage_ms": {
+    "generate": 91.9,
+    "ingest": 195.7,
+    "match": 222.4,
+    "resolve": 22.2,
+    "critic": 10.4
+  },
+  "pipeline_ms": 612.6,
+  "invoices_per_sec": 32648.6,
+  "llm_calls": 2000,
+  "counts_by_verdict": {
+    "duplicate": 200,
+    "partial": 2000,
+    "matched": 16200,
+    "missing_in_books": 1000,
+    "missing_in_2b": 800
+  }
+}

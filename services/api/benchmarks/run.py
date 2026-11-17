@@ -5,7 +5,6 @@ Measures speed only. Accuracy is never scored on synthetic data.
 """
 
 import argparse
-import asyncio
 import json
 import subprocess
 import tempfile
@@ -50,8 +49,13 @@ def main() -> None:
         bs = parse_books((base / "books.csv").read_bytes(), "books.csv")
         ingest_ms = (time.perf_counter() - t1) * 1000
 
-    llm = FakeLLM({ResolverOut: ResolverOut(
-        row_key="x", likely_cause="unknown", explanation="bench", suggested_action="none")})
+    llm = FakeLLM(
+        {
+            ResolverOut: ResolverOut(
+                row_key="x", likely_cause="unknown", explanation="bench", suggested_action="none"
+            )
+        }
+    )
     deps = Deps(llm=llm, budget=Budget(10**12, Decimal(10**9)), firm_id="bench")
     t2 = time.perf_counter()
     state = run_pipeline(f"bench-{time.time_ns()}", gs, bs, "2026-11", deps)
@@ -66,8 +70,11 @@ def main() -> None:
         "sha": _sha(),
         "size_invoices": args.size,
         "llm": args.llm,
-        "stage_ms": {"generate": round(gen_ms, 1), "ingest": round(ingest_ms, 1),
-                     **{k: round(v, 1) for k, v in timings.items()}},
+        "stage_ms": {
+            "generate": round(gen_ms, 1),
+            "ingest": round(ingest_ms, 1),
+            **{k: round(v, 1) for k, v in timings.items()},
+        },
         "pipeline_ms": round(e2e_ms, 1),
         "invoices_per_sec": round(args.size / max(e2e_ms / 1000, 1e-9), 1),
         "llm_calls": len(llm.calls),

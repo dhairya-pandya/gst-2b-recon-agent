@@ -96,25 +96,31 @@ def match(gstr2b: list[Gstr2bRow], books: list[BookRow], period: str) -> list[Ma
         results.append(paired)
 
     # Pass 2: same PAN, fuzzy invoice number, taxable value within tolerance → branch partial.
-    remaining_books = [b for b in unique_books if b.row_id not in used_books]
+    # Keys are computed once per row and books are bucketed by PAN, so this pass is
+    # O(leftover × books-in-same-PAN) rather than O(leftover × all books).
+    buckets: dict[str, list[tuple[BookRow, str]]] = {}
+    for b in unique_books:
+        if b.row_id in used_books:
+            continue
+        buckets.setdefault(pan_of(b.supplier_gstin), []).append((b, canon_invoice(b.invoice_no)))
     still_2b: list[Gstr2bRow] = []
     for row in leftover_2b:
-        candidate = None
-        for b in remaining_books:
-            if pan_of(b.supplier_gstin) != pan_of(row.supplier_gstin):
-                continue
-            score = fuzz.ratio(canon_invoice(row.invoice_no), canon_invoice(b.invoice_no))
+        bucket = buckets.get(pan_of(row.supplier_gstin), [])
+        row_canon = canon_invoice(row.invoice_no)
+        found: int | None = None
+        for idx, (b, b_canon) in enumerate(bucket):
+            score = fuzz.ratio(row_canon, b_canon)
             if score >= FUZZY_MIN and abs(b.taxable_value - row.taxable_value) <= ABS_TOLERANCE:
-                candidate = b
+                found = idx
                 break
-        if candidate is None:
+        if found is None:
             still_2b.append(row)
             continue
-        remaining_books.remove(candidate)
+        candidate, _ = bucket.pop(found)
         used_books.add(candidate.row_id)
-        reasons = ["gstin_branch"]
-        if row.supplier_gstin.strip().upper() == candidate.supplier_gstin.strip().upper():
-            reasons = []
+        reasons = []
+        if row.supplier_gstin.strip().upper() != candidate.supplier_gstin.strip().upper():
+            reasons = ["gstin_branch"]
         results.append(
             MatchResult(verdict=Verdict.PARTIAL, gstr2b=row, book=candidate, reasons=reasons)
         )
