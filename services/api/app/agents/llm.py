@@ -70,3 +70,45 @@ def stage(name: str, timings: dict[str, float]) -> Iterator[None]:
         yield
     finally:
         timings[name] = timings.get(name, 0.0) + (time.perf_counter() - start) * 1000
+
+
+class VertexLLM:
+    """Gemini via Vertex AI (google-genai SDK). Requires GCP project and ADC credentials."""
+
+    def __init__(
+        self, client: Any | None = None, project: str | None = None, location: str = "asia-south1"
+    ) -> None:
+        if client is None:
+            from google import genai
+
+            client = genai.Client(vertexai=True, project=project, location=location)
+        self._client = client
+
+    async def structured(
+        self, model: str, system: str, user: str, schema: type[T]
+    ) -> tuple[T, Usage]:
+        from google.genai import types
+
+        start = time.perf_counter()
+        resp = await self._client.aio.models.generate_content(
+            model=model,
+            contents=user,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                response_mime_type="application/json",
+                response_schema=schema,
+                temperature=0,
+            ),
+        )
+        latency = (time.perf_counter() - start) * 1000
+        value = schema.model_validate_json(resp.text or "")
+        meta = resp.usage_metadata
+        in_tok = int(getattr(meta, "prompt_token_count", 0) or 0)
+        out_tok = int(getattr(meta, "candidates_token_count", 0) or 0)
+        usage = Usage(
+            input_tokens=in_tok,
+            output_tokens=out_tok,
+            latency_ms=latency,
+            inr=cost_inr(model, in_tok, out_tok),
+        )
+        return value, usage
