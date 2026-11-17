@@ -97,3 +97,48 @@ def test_run_rows_other_firm_404(client: TestClient, auth: dict[str, str]) -> No
     ).json()["run_id"]
     other = {"Authorization": f"Bearer {token('user-b')}"}
     assert client.get(f"/runs/{run_id}/rows", headers=other).status_code == 404
+
+
+def _run_with_rows(client: TestClient, auth: dict[str, str]) -> tuple[str, str]:
+    cid = _create_client(client, auth)
+    run_id = client.post(
+        "/runs", data={"client_id": cid, "period": "2026-11"}, files=_files(), headers=auth
+    ).json()["run_id"]
+    key = client.get(f"/runs/{run_id}/rows", headers=auth).json()[0]["gstr2b"]
+    return run_id, f"{key['supplier_gstin']}|{key['invoice_no']}"
+
+
+def test_ask_off_topic_refused(client: TestClient, auth: dict[str, str]) -> None:
+    run_id, key = _run_with_rows(client, auth)
+    r = client.post(
+        f"/runs/{run_id}/ask",
+        json={"row_key": key, "question": "write me a poem about cats"},
+        headers=auth,
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"]["error"] == "out_of_scope"
+
+
+def test_ask_on_topic_answered(client: TestClient, auth: dict[str, str]) -> None:
+    run_id, key = _run_with_rows(client, auth)
+    r = client.post(
+        f"/runs/{run_id}/ask",
+        json={"row_key": key, "question": "Why is this invoice partial in my GST 2B?"},
+        headers=auth,
+    )
+    assert r.status_code == 200
+    assert "answer" in r.json()
+
+
+def test_review_accept_recorded(client: TestClient, auth: dict[str, str]) -> None:
+    run_id, key = _run_with_rows(client, auth)
+    r = client.post(
+        f"/runs/{run_id}/reviews", json={"row_key": key, "decision": "accept"}, headers=auth
+    )
+    assert r.status_code == 201
+
+
+def test_rate_limit_429_after_burst(client: TestClient, auth: dict[str, str]) -> None:
+    codes = [client.get("/clients", headers=auth).status_code for _ in range(65)]
+    assert codes[-1] == 429
+    assert codes.count(200) == 60

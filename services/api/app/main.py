@@ -1,17 +1,36 @@
-from typing import Any
+import time
+from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from app.config import Settings
 from app.core.match import match
 from app.guard.auth import CurrentUser
+from app.guard.ratelimit import TokenBucket
+from app.guard.scope import in_scope
 from app.ingest.books import parse_books
 from app.ingest.gstr2b import parse_gstr2b_json
 from app.models import IngestError
 from app.store import Store
+
+
+class AskIn(BaseModel):
+    row_key: str
+    question: str = Field(max_length=500)
+
+
+class ReviewIn(BaseModel):
+    row_key: str
+    decision: Literal["accept", "reject"]
+
+
+def _row_key(row: dict[str, Any]) -> str:
+    src = row.get("gstr2b") or row.get("book") or {}
+    return f"{src.get('supplier_gstin', '')}|{src.get('invoice_no', '')}"
 
 
 class ClientIn(BaseModel):
@@ -45,6 +64,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok"}
 
     store: Store = app.state.store
+    limiter = TokenBucket(capacity=60, refill_per_sec=1.0)
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next: Any) -> Any:
+        key = request.headers.get("authorization", "") or (
+            request.client.host if request.client else "anon"
+        )
+        if not limiter.allow(key, time.monotonic()):
+            return JSONResponse(
+                status_code=429, content={"detail": "rate limited"}, headers={"Retry-After": "1"}
+            )
+        return await call_next(request)
 
     @app.post("/clients", status_code=201)
     def create_client(body: ClientIn, user: CurrentUser) -> dict[str, Any]:
@@ -110,6 +141,32 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": run["status"],
             "counts_by_verdict": run.get("counts_by_verdict", {}),
         }
+
+    @app.post("/runs/{run_id}/ask")
+    def ask_row(run_id: str, body: AskIn, user: CurrentUser) -> dict[str, Any]:
+        row_key = body.row_key
+        run = store.run_in(store.firm_for(user), UUID(run_id))
+        if run is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        if not in_scope(body.question):
+            raise HTTPException(status_code=422, detail={"error": "out_of_scope"})
+        row = next((r for r in run.get("rows", []) if _row_key(r) == row_key), None)
+        if row is None:
+            raise HTTPException(status_code=404, detail="row not found")
+        return {
+            "answer": f"Row {row_key} is {row['verdict']}. Reasons: {row['reasons']}.",
+            "grounded_on": row_key,
+        }
+
+    @app.post("/runs/{run_id}/reviews", status_code=201)
+    def review_row(run_id: str, body: ReviewIn, user: CurrentUser) -> dict[str, str]:
+        run = store.run_in(store.firm_for(user), UUID(run_id))
+        if run is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        run.setdefault("reviews", []).append(
+            {"row_key": body.row_key, "decision": body.decision, "by": user}
+        )
+        return {"status": "recorded"}
 
     @app.get("/runs/{run_id}/rows")
     def get_rows(run_id: str, user: CurrentUser) -> list[dict[str, Any]]:
