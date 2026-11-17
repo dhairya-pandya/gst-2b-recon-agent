@@ -60,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.get("/healthz")
+    @app.get("/health")  # /healthz is reserved by Cloud Run's front end; /health is the probe path
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
 

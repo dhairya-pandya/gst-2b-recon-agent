@@ -8,3 +8,8 @@ def test_healthz_ok() -> None:
     response = client.get("/healthz")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_health_alias_ok() -> None:
+    client = TestClient(create_app())
+    assert client.get("/health").json() == {"status": "ok"}

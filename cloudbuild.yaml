@@ -1,0 +1,16 @@
+# Build the API image from the repo root (the corpus is part of the image).
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - services/api/Dockerfile
+      - -t
+      - ${_IMAGE}
+      - .
+images:
+  - ${_IMAGE}
+substitutions:
+  _IMAGE: asia-south1-docker.pkg.dev/project-1299407e-7d72-48ba-8bb/gst-recon/api:latest
+options:
+  logging: CLOUD_LOGGING_ONLY
