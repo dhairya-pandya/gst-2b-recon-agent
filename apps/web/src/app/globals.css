@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Single source for color, type, spacing and radius.
+ * Every component uses these names; no raw hex values outside this file.
+ */
+@theme {
+  --color-ink: #23306b;
+  --color-paper: #f7f8f6;
+  --color-rule: #d9dcd4;
+  --color-matched: #1e6b47;
+  --color-check: #a86a12;
+  --color-missing: #a3261f;
+
+  --font-sans: var(--font-commissioner), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-input: 2px;
+  --radius-panel: 6px;
+  --radius-stamp: 999px;
+
+  --text-caption: 0.8125rem;
+  --text-body: 0.9375rem;
+  --text-lead: 1.0625rem;
+  --text-heading: 1.3125rem;
+  --text-display: 1.6875rem;
+  --text-title: 2.125rem;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
