@@ -62,5 +62,37 @@ def parse_gstr2b_json(data: bytes) -> list[Gstr2bRow]:
     return rows
 
 
-def parse_gstr2b_excel(data: bytes) -> list[Gstr2bRow]:
-    raise NotImplementedError("Excel export parser: added after JSON path is green")
+def parse_gstr2b_excel(data: bytes, period: str) -> list[Gstr2bRow]:
+    import io
+
+    import openpyxl
+
+    wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    if "B2B" not in wb.sheetnames:
+        raise IngestError("B2B", "sheet not found in workbook")
+    ws = wb["B2B"]
+    rows: list[Gstr2bRow] = []
+    header_seen = False
+    for n, values in enumerate(ws.iter_rows(values_only=True), start=1):
+        if not header_seen:
+            header_seen = True
+            continue
+        if not values or values[0] is None:
+            continue
+        gstin, inum, idt, _inv_val, txval, igst, cgst, sgst, cess = (list(values) + [0] * 9)[:9]
+        rows.append(
+            Gstr2bRow(
+                supplier_gstin=str(gstin).strip(),
+                invoice_no=str(inum).strip(),
+                invoice_date=parse_date(idt, "Invoice Date", n),
+                taxable_value=dec(txval, "Taxable Value", n),
+                tax=TaxAmounts(
+                    igst=dec(igst or 0, "Integrated Tax", n),
+                    cgst=dec(cgst or 0, "Central Tax", n),
+                    sgst=dec(sgst or 0, "State/UT Tax", n),
+                    cess=dec(cess or 0, "Cess", n),
+                ),
+                period=period,
+            )
+        )
+    return rows
