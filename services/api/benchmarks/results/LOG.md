@@ -17,3 +17,11 @@ Verdict counts at 20k are consistent with the planted mix (matched 16,200 = exac
 | 2 | e1c6d0b | same | 20k | throughput, invoices/sec | 32,649 | 47,043 | +44% |
 
 Round 2 numbers are the median of three runs on the same machine; the spread across the three runs was under 2%.
+
+## Real-model run (Gemini 2.5 Flash, free tier)
+
+| Date | Commit | Size | LLM calls | Resolve stage | Pipeline | Throughput | Note |
+|---|---|---|---|---|---|---|---|
+| 2026-11-17 | 5fb9a30 | 100 invoices (10 partial rows) | 10 | 108,954 ms | 108,964 ms | 0.9 inv/s | Quota-bound: free tier allows 5 requests/min, so the client backed off on 429s. Not a compute measurement. |
+
+Single-call latency measured separately: about 1.4 s for a 19-token-in, 9-token-out prompt. The gap between that and 109 s for 10 calls is the free-tier rate limit, not model time. Real throughput needs a paid tier with a higher quota; these numbers say nothing about production speed.

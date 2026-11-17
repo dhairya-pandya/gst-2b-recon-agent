@@ -1,0 +1,23 @@
+{
+  "when": "2026-11-17T14:41:50+00:00",
+  "sha": "5fb9a30",
+  "size_invoices": 100,
+  "llm": "gemini",
+  "stage_ms": {
+    "generate": 0.8,
+    "ingest": 1.4,
+    "match": 0.8,
+    "resolve": 108953.6,
+    "critic": 0.3
+  },
+  "pipeline_ms": 108964.1,
+  "invoices_per_sec": 0.9,
+  "llm_calls": null,
+  "counts_by_verdict": {
+    "duplicate": 1,
+    "matched": 81,
+    "partial": 10,
+    "missing_in_books": 5,
+    "missing_in_2b": 4
+  }
+}
