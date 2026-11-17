@@ -22,11 +22,12 @@ class Deps:
     firm_id: str
     checkpointer: MemorySaver = field(default_factory=MemorySaver)
     match_calls: int = 0
+    # Inputs live here, not in graph state, so checkpoints store only results.
+    gstr2b: list[Gstr2bRow] = field(default_factory=list)
+    books: list[BookRow] = field(default_factory=list)
 
 
 class PipelineState(TypedDict, total=False):
-    gstr2b: list[dict[str, Any]]
-    books: list[dict[str, Any]]
     period: str
     results: list[dict[str, Any]]
     agent_outputs: dict[str, dict[str, Any]]
@@ -37,11 +38,9 @@ class PipelineState(TypedDict, total=False):
 def _build(deps: Deps) -> Any:
     def match_node(state: PipelineState) -> dict[str, Any]:
         deps.match_calls += 1
-        gs = [Gstr2bRow.model_validate(r) for r in state["gstr2b"]]
-        bs = [BookRow.model_validate(b) for b in state["books"]]
         timings = dict(state.get("timings", {}))
         with stage("match", timings):
-            results = match(gs, bs, state["period"])
+            results = match(deps.gstr2b, deps.books, state["period"])
         return {
             "results": [{**r.model_dump(mode="json"), "key": row_key(r)} for r in results],
             "timings": timings,
@@ -119,6 +118,8 @@ def run_pipeline(
     period: str,
     deps: Deps,
 ) -> PipelineState:
+    deps.gstr2b = gstr2b
+    deps.books = books
     graph = _build(deps)
     config = {"configurable": {"thread_id": thread_id}}
     snapshot = graph.get_state(config)
@@ -127,10 +128,6 @@ def run_pipeline(
         return saved  # finished: return saved result, no rerun
     payload: dict[str, Any] | None = None
     if not snapshot.values:
-        payload = {
-            "gstr2b": [r.model_dump(mode="json") for r in gstr2b],
-            "books": [b.model_dump(mode="json") for b in books],
-            "period": period,
-        }
+        payload = {"period": period}
     result: PipelineState = graph.invoke(payload, config)
     return result

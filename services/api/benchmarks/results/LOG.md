@@ -13,3 +13,7 @@ Measured on the author's laptop (Apple Silicon, Python 3.12). Times in milliseco
 | 1 | cf53d0c | same | 20k | pipeline end-to-end | 1912.4 | 612.6 | −68% |
 
 Verdict counts at 20k are consistent with the planted mix (matched 16,200 = exact + format + first copy of duplicates; partial 2,000 = amount + branch; missing each 800 / 1,000).
+| 2 | pending | Keep pipeline inputs out of checkpointed state; state holds results only (profile showed 60k pydantic dumps and 42k re-validations per run, plus msgpack of 40k rows per checkpoint) | 20k | pipeline end-to-end (median of 3) | 612.6 | 425.1 | −31% |
+| 2 | pending | same | 20k | throughput, invoices/sec | 32,649 | 47,043 | +44% |
+
+Round 2 numbers are the median of three runs on the same machine; the spread across the three runs was under 2%.
