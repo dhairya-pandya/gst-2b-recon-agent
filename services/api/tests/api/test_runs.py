@@ -69,3 +69,31 @@ def test_create_run_completes_with_counts(client: TestClient, auth: dict[str, st
     body = client.get(f"/runs/{r.json()['run_id']}", headers=auth).json()
     assert body["status"] == "completed"
     assert sum(body["counts_by_verdict"].values()) == 3
+
+
+def test_run_rows_returned_with_verdicts(client: TestClient, auth: dict[str, str]) -> None:
+    cid = _create_client(client, auth)
+    r = client.post(
+        "/runs", data={"client_id": cid, "period": "2026-11"}, files=_files(), headers=auth
+    )
+    run_id = r.json()["run_id"]
+    body = client.get(f"/runs/{run_id}/rows", headers=auth).json()
+    assert len(body) == 3
+    assert {row["verdict"] for row in body} <= {
+        "matched",
+        "partial",
+        "missing_in_2b",
+        "missing_in_books",
+        "duplicate",
+    }
+    first = body[0]
+    assert "invoice_no" in first["gstr2b"] or "invoice_no" in first["book"]
+
+
+def test_run_rows_other_firm_404(client: TestClient, auth: dict[str, str]) -> None:
+    cid = _create_client(client, auth)
+    run_id = client.post(
+        "/runs", data={"client_id": cid, "period": "2026-11"}, files=_files(), headers=auth
+    ).json()["run_id"]
+    other = {"Authorization": f"Bearer {token('user-b')}"}
+    assert client.get(f"/runs/{run_id}/rows", headers=other).status_code == 404

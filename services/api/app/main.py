@@ -83,7 +83,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         counts: dict[str, int] = {}
         for r in results:
             counts[r.verdict.value] = counts.get(r.verdict.value, 0) + 1
-        run.update({"status": "completed", "counts_by_verdict": counts})
+        run.update(
+            {
+                "status": "completed",
+                "counts_by_verdict": counts,
+                "rows": [
+                    {
+                        "verdict": r.verdict.value,
+                        "reasons": r.reasons,
+                        "gstr2b": r.gstr2b.model_dump(mode="json") if r.gstr2b else None,
+                        "book": r.book.model_dump(mode="json") if r.book else None,
+                    }
+                    for r in results
+                ],
+            }
+        )
         return {"run_id": str(run["id"]), "status": "completed"}
 
     @app.get("/runs/{run_id}")
@@ -96,5 +110,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": run["status"],
             "counts_by_verdict": run.get("counts_by_verdict", {}),
         }
+
+    @app.get("/runs/{run_id}/rows")
+    def get_rows(run_id: str, user: CurrentUser) -> list[dict[str, Any]]:
+        run = store.run_in(store.firm_for(user), UUID(run_id))
+        if run is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        return list(run.get("rows", []))
 
     return app
