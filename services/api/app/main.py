@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import Settings
+from app.core.invoice_check import check_invoice
 from app.core.match import match
 from app.guard.auth import CurrentUser
 from app.guard.ratelimit import TokenBucket
@@ -133,6 +134,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "supplier_gstin": doc.supplier_gstin,
                     "total": str(doc.total) if doc.total is not None else None,
                     "needs_ocr": doc.needs_ocr,
+                    **check_invoice(doc, bs),
                 }
             )
 
