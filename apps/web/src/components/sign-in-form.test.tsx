@@ -27,6 +27,6 @@ describe("SignInForm", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith(
       expect.objectContaining({ email: "ca@firm.in" }),
     );
-    expect(await screen.findByText("Check your email for a sign-in link.")).toBeInTheDocument();
+    expect(await screen.findByText(/Check your inbox for the sign-in link/)).toBeInTheDocument();
   });
 });

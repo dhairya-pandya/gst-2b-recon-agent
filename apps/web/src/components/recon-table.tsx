@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ReconRow, type ReconEntry } from "./recon-row";
 import { type Verdict } from "./verdict-stamp";
+import { ui } from "@/lib/ui";
 
 export type RunRow = {
   verdict: Verdict;
@@ -47,7 +48,7 @@ export function ReconTable({ rows }: { rows: RunRow[] }) {
               aria-pressed={pressed}
               onClick={() => setFilter(f.verdict)}
               className={`rounded-input border px-3 py-1 text-caption ${
-                pressed ? "border-ink bg-ink text-paper" : "border-rule"
+                pressed ? "border-ink bg-ink font-medium text-paper" : "border-rule hover:border-ink"
               }`}
             >
               {`${f.label} (${n})`}
@@ -55,15 +56,22 @@ export function ReconTable({ rows }: { rows: RunRow[] }) {
           );
         })}
       </div>
-      <div className="rounded-panel border border-rule bg-white">
-        {visible.map((r, i) => (
-          <ReconRow
-            key={i}
-            verdict={r.verdict}
-            gstr2b={r.gstr2b}
-            book={r.book}
-          />
-        ))}
+      <div className={ui.panel}>
+        <div
+          role="presentation"
+          className="grid grid-cols-[42%_16%_42%] border-b border-rule px-3 py-2 text-caption font-medium"
+        >
+          <span>2B entry</span>
+          <span className="text-center">Verdict</span>
+          <span>Book entry</span>
+        </div>
+        {visible.length === 0 ? (
+          <p className="p-4 text-body">No invoices have this verdict in this run.</p>
+        ) : (
+          visible.map((r, i) => (
+            <ReconRow key={i} verdict={r.verdict} gstr2b={r.gstr2b} book={r.book} />
+          ))
+        )}
       </div>
     </section>
   );

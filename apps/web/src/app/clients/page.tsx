@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { validateClientInput } from "@/lib/client-form";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { ui } from "@/lib/ui";
 
 type Client = { id: string; name: string; gstin: string };
 
 export default function ClientsPage() {
   const [token, setToken] = useState<string | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Client[] | null>(null);
   const [name, setName] = useState("");
   const [gstin, setGstin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +26,13 @@ export default function ClientsPage() {
     if (!token) return;
     apiFetch("/clients", { token })
       .then((c) => setClients(c as Client[]))
-      .catch(() => setError("Could not load your clients."));
+      .catch(() => setError("Your clients could not be loaded. Refresh the page to try again."));
   }, [token]);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!token) return setError("Sign in to add a client.");
+    if (!token) return setError("Sign in before adding a client.");
     const problem = validateClientInput({ name, gstin });
     if (problem) return setError(problem);
     setBusy(true);
@@ -41,54 +42,78 @@ export default function ClientsPage() {
         method: "POST",
         json: { name: name.trim(), gstin: gstin.trim().toUpperCase() },
       })) as Client;
-      setClients((prev) => [...prev, created]);
+      setClients((prev) => [...(prev ?? []), created]);
       setName("");
       setGstin("");
     } catch {
-      setError("The client could not be saved. Check the GSTIN and try again.");
+      setError("The client was not saved. Check the GSTIN, which must be 15 characters, and try again.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <main className="mx-auto grid max-w-2xl gap-8 p-8">
-      <h1 className="text-heading font-semibold">Clients</h1>
-      <form onSubmit={add} className="grid gap-4">
-        <label className="grid gap-1 text-caption">
-          Legal name
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-input border border-rule bg-white px-3 py-2 text-body"
-          />
-        </label>
-        <label className="grid gap-1 text-caption">
-          GSTIN
-          <input
-            value={gstin}
-            onChange={(e) => setGstin(e.target.value)}
-            maxLength={15}
-            className="rounded-input border border-rule bg-white px-3 py-2 text-body tabular-nums"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="justify-self-start rounded-input bg-ink px-4 py-2 text-paper disabled:opacity-60"
-        >
-          Add client
-        </button>
-      </form>
-      {error && <p role="alert">{error}</p>}
-      <ul className="grid gap-2">
-        {clients.map((c) => (
-          <li key={c.id} className="flex justify-between rounded-panel border border-rule bg-white px-4 py-3">
-            <span>{c.name}</span>
-            <span className="tabular-nums">{c.gstin}</span>
-          </li>
-        ))}
-      </ul>
+    <main className="mx-auto grid w-full max-w-3xl gap-10 px-8 py-12">
+      <header className="grid gap-2">
+        <h1 className={ui.heading}>Clients</h1>
+        <p className="text-body">A client is a business whose GSTR-2B you reconcile.</p>
+      </header>
+
+      <section aria-labelledby="add-heading" className={`${ui.panel} grid gap-5 p-6`}>
+        <h2 id="add-heading" className="font-semibold">Add a client</h2>
+        <form onSubmit={add} className="grid gap-4 sm:grid-cols-2">
+          <label htmlFor="client-name" className={ui.field}>
+            Legal name
+            <input
+              id="client-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="organization"
+              className={ui.input}
+            />
+          </label>
+          <label htmlFor="client-gstin" className={ui.field}>
+            GSTIN
+            <input
+              id="client-gstin"
+              value={gstin}
+              onChange={(e) => setGstin(e.target.value)}
+              maxLength={15}
+              aria-describedby="gstin-hint"
+              className={`${ui.input} tabular-nums`}
+            />
+          </label>
+          <p id="gstin-hint" className={`${ui.hint} sm:col-span-2`}>
+            The 15-character GSTIN from the client&apos;s registration certificate.
+          </p>
+          <div className="sm:col-span-2">
+            <button type="submit" disabled={busy} className={ui.primary}>
+              {busy ? "Saving…" : "Save client"}
+            </button>
+          </div>
+        </form>
+        {error && <p role="alert" className={ui.error}>{error}</p>}
+      </section>
+
+      <section aria-labelledby="list-heading" className="grid gap-3">
+        <h2 id="list-heading" className="font-semibold">Your clients</h2>
+        {clients === null && !error && <p className="text-body">Loading clients…</p>}
+        {clients?.length === 0 && (
+          <p className={`${ui.panel} p-4 text-body`}>
+            No clients yet. Add a client above, then start a reconciliation for them.
+          </p>
+        )}
+        {clients && clients.length > 0 && (
+          <ul className={`${ui.panel} divide-y divide-rule`}>
+            {clients.map((c) => (
+              <li key={c.id} className="flex flex-wrap justify-between gap-2 px-4 py-3">
+                <span className="font-medium">{c.name}</span>
+                <span className="tabular-nums">{c.gstin}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

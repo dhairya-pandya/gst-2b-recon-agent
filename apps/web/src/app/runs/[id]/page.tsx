@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ReconTable, type RunRow } from "@/components/recon-table";
 import { apiFetch } from "@/lib/api";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { ui } from "@/lib/ui";
 
 type RawRow = {
   verdict: RunRow["verdict"];
@@ -56,10 +57,23 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   }, [id]);
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 p-8">
-      <h1 className="text-heading font-semibold">Reconciliation</h1>
-      {error && <p role="alert">{error}</p>}
-      {rows && <ReconTable rows={rows} />}
+    <main className="mx-auto grid w-full max-w-5xl gap-6 px-8 py-12">
+      <header className="grid gap-2">
+        <h1 className={ui.heading}>Reconciliation</h1>
+        {rows && (
+          <p className="text-body">
+            {rows.length} {rows.length === 1 ? "invoice" : "invoices"} compared. Filter by verdict to review.
+          </p>
+        )}
+      </header>
+      {!rows && !error && <p className="text-body">Loading reconciliation…</p>}
+      {error && <p role="alert" className={ui.error}>{error}</p>}
+      {rows && rows.length === 0 && (
+        <p className={`${ui.panel} p-4 text-body`}>
+          This run has no invoices. Check that the GSTR-2B and purchase register both contain rows for this period.
+        </p>
+      )}
+      {rows && rows.length > 0 && <ReconTable rows={rows} />}
     </main>
   );
 }
