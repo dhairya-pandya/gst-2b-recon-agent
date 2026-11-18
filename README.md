@@ -2,7 +2,7 @@
 
 Multi-agent system that reconciles a client's GSTR-2B against its purchase register and invoice PDFs, flags ITC mismatches, and drafts supplier follow-ups. Built for Indian CA firms.
 
-**Status:** backend, database security (row-level security verified locally), web app and benchmark harness built and tested. Live cloud services (Google sign-in, Vertex AI, Cloud Run) are not yet connected — see the status table below.
+**Status:** backend, database security (row-level security verified locally), web app and benchmark harness built and tested. The API and web app are deployed to Cloud Run. Google sign-in and live Vertex AI calls are not yet verified — see the status table below.
 
 ## Problem
 
@@ -31,17 +31,17 @@ Reproduce: `cd services/api && uv run python -m benchmarks.run --size 20000`
 
 | Area | State |
 |---|---|
-| Ingest (GSTR-2B JSON and Excel, purchase register CSV, invoice PDF) | Built, tested |
+| Ingest (GSTR-2B JSON and Excel, purchase register CSV, invoice PDF) | Built, tested; invoice PDFs are parsed and their totals checked against matching book rows (reported, verdicts unchanged) |
 | Normalisation and matcher | Built, tested |
 | LangGraph pipeline, budgets, checkpoints | Built, tested (fake LLM) |
 | Guardrails (scope, PII, rate limit, injection stripping) | Built, tested as logic; not yet wired into all HTTP routes |
 | Auth, run, row-question and review endpoints | Built, tested; run data still in memory (not yet on Postgres) |
 | Supabase schema and row-level security | Built and verified against a local Supabase: 4 RLS tests pass (cross-firm reads and writes blocked) |
 | Legal corpus RAG | Built with a hash embedder; corpus text is paraphrased and awaits verification |
-| Web design system, sign-in page, reconciliation table, run page | Built, tested (15 web tests); sign-in page renders in browser |
-| Google and email sign-in end to end | Email and Google flows are coded; not exercised against a real Supabase project or Google OAuth client |
+| Web design system, sign-in page, clients page, new-run page, reconciliation table | Built, tested (21 web tests); sign-in page renders in the deployed app |
+| Google and email sign-in end to end | Email and Google flows are coded; not yet exercised end to end. Google OAuth client not configured |
 | Vertex AI calls and LLM benchmarks | Client written and unit-tested with a mock; no live calls run yet (needs GCP project) |
-| Cloud Run deploy | Image builds locally; health and token checks pass in the container; not deployed (needs GCP project) |
+| Cloud Run deploy | API and web app deployed to Cloud Run (asia-south1). Auth rejects requests without a token; CORS allows the web origin |
 
 ## Layout
 
