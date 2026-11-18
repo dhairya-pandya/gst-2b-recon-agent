@@ -14,6 +14,7 @@ from app.guard.ratelimit import TokenBucket
 from app.guard.scope import in_scope
 from app.ingest.books import parse_books
 from app.ingest.gstr2b import parse_gstr2b_json
+from app.ingest.invoices import extract_invoice
 from app.models import IngestError
 from app.store import Store
 
@@ -31,6 +32,9 @@ class ReviewIn(BaseModel):
 def _row_key(row: dict[str, Any]) -> str:
     src = row.get("gstr2b") or row.get("book") or {}
     return f"{src.get('supplier_gstin', '')}|{src.get('invoice_no', '')}"
+
+
+MAX_INVOICES = 200
 
 
 class ClientIn(BaseModel):
@@ -95,6 +99,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         period: str = Form(...),
         gstr2b: UploadFile = File(...),
         books: UploadFile = File(...),
+        invoices: list[UploadFile] = File(default=[]),
     ) -> dict[str, Any]:
         firm = store.firm_for(user)
         client = store.client_in(firm, UUID(client_id))
@@ -109,6 +114,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         bs = parse_books(b_bytes, books.filename or "books.csv")
         if len(gs) + len(bs) > settings.max_rows:
             raise HTTPException(status_code=413, detail="too many rows")
+        if len(invoices) > MAX_INVOICES:
+            raise HTTPException(status_code=413, detail="too many invoices")
+        inv_docs = []
+        for f in invoices:
+            data = await f.read(settings.max_file_bytes + 1)
+            if len(data) > settings.max_file_bytes:
+                raise HTTPException(status_code=413, detail="file too large")
+            try:
+                doc = extract_invoice(data, f.filename or "invoice.pdf")
+            except Exception as exc:  # pdfplumber raises several parser error types
+                detail = f"unreadable invoice: {f.filename}"
+                raise HTTPException(status_code=422, detail=detail) from exc
+            inv_docs.append(
+                {
+                    "filename": doc.filename,
+                    "invoice_no": doc.invoice_no,
+                    "supplier_gstin": doc.supplier_gstin,
+                    "total": str(doc.total) if doc.total is not None else None,
+                    "needs_ocr": doc.needs_ocr,
+                }
+            )
 
         run = store.add_run(firm, client["id"], period)
         results = match(gs, bs, period)
@@ -119,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             {
                 "status": "completed",
                 "counts_by_verdict": counts,
+                "invoices": inv_docs,
                 "rows": [
                     {
                         "verdict": r.verdict.value,
@@ -141,6 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "id": str(run["id"]),
             "status": run["status"],
             "counts_by_verdict": run.get("counts_by_verdict", {}),
+            "invoices": run.get("invoices", []),
         }
 
     @app.post("/runs/{run_id}/ask")

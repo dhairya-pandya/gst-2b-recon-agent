@@ -16,6 +16,7 @@ export default function NewRunPage() {
   const [period, setPeriod] = useState("");
   const [gstr2b, setGstr2b] = useState<File | null>(null);
   const [books, setBooks] = useState<File | null>(null);
+  const [invoices, setInvoices] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,7 +39,7 @@ export default function NewRunPage() {
     if (!token) return setError("Sign in to start a run.");
     if (!gstr2b || !books) return setError("Add both the GSTR-2B file and the purchase register.");
     try {
-      const body = buildRunForm({ clientId, period, gstr2b, books, invoices: [] });
+      const body = buildRunForm({ clientId, period, gstr2b, books, invoices });
       setBusy(true);
       const res = (await apiFetch("/runs", { token, method: "POST", body })) as { run_id: string };
       router.push(`/runs/${res.run_id}`);
@@ -82,6 +83,15 @@ export default function NewRunPage() {
         <label className="grid gap-1 text-caption">
           Purchase register (CSV)
           <input type="file" accept=".csv" onChange={(e) => setBooks(e.target.files?.[0] ?? null)} />
+        </label>
+        <label className="grid gap-1 text-caption">
+          Invoice PDFs (optional)
+          <input
+            type="file"
+            multiple
+            accept=".pdf"
+            onChange={(e) => setInvoices(Array.from(e.target.files ?? []))}
+          />
         </label>
         <button
           type="submit"
