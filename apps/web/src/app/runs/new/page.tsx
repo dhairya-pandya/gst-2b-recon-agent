@@ -118,8 +118,8 @@ export default function NewRunPage() {
 
         <FileField
           label="GSTR-2B file"
-          hint="The JSON file downloaded from the GST portal."
-          accept=".json"
+          hint="The JSON or Excel file downloaded from the GST portal."
+          accept=".json,.xlsx"
           files={gstr2b}
           onChange={setGstr2b}
         />

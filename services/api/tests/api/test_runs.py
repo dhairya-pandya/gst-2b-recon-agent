@@ -142,3 +142,18 @@ def test_rate_limit_429_after_burst(client: TestClient, auth: dict[str, str]) ->
     codes = [client.get("/clients", headers=auth).status_code for _ in range(65)]
     assert codes[-1] == 429
     assert codes.count(200) == 60
+
+
+def test_run_accepts_gstr2b_excel(client: TestClient, auth: dict[str, str]) -> None:
+    from tests.ingest.test_excel_pdf import _xlsx
+
+    cid = _create_client(client, auth)
+    xlsx = _xlsx([["29AAACB1234F1Z5", "ABC/101", "05-11-2026", 1180, 1000, 180, 0, 0, 0]])
+    files = _files()
+    files["gstr2b"] = ("gstr2b.xlsx", xlsx, "application/octet-stream")
+    r = client.post(
+        "/runs", data={"client_id": cid, "period": "2026-11"}, files=files, headers=auth
+    )
+    assert r.status_code == 201, r.text
+    rows = client.get(f"/runs/{r.json()['run_id']}/rows", headers=auth).json()
+    assert any(x["verdict"] == "matched" and x["gstr2b"]["invoice_no"] == "ABC/101" for x in rows)

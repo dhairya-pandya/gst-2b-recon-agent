@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.agents.llm import LLM, Usage
 from app.core.match import MatchResult
+from app.guard.pii import mask_pii
 from app.guard.sanitize import wrap_untrusted
 
 FLASH = "gemini-2.5-flash"
@@ -51,7 +52,7 @@ _SYSTEM = (
 async def resolve(llm: LLM, m: MatchResult, document_text: str) -> tuple[ResolverOut, Usage]:
     user = (
         f"Row: {row_key(m)} verdict={m.verdict.value} reasons={m.reasons}\n"
-        f"{wrap_untrusted(document_text)}"
+        f"{mask_pii(wrap_untrusted(document_text))}"
     )
     return await llm.structured(FLASH, _SYSTEM, user, ResolverOut)
 

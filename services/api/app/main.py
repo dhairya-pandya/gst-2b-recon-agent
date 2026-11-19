@@ -18,7 +18,7 @@ from app.guard.budget import Budget
 from app.guard.ratelimit import TokenBucket
 from app.guard.scope import in_scope
 from app.ingest.books import parse_books
-from app.ingest.gstr2b import parse_gstr2b_json
+from app.ingest.gstr2b import parse_gstr2b_excel, parse_gstr2b_json
 from app.ingest.invoices import extract_invoice
 from app.models import IngestError
 from app.store import Store
@@ -137,7 +137,10 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
         if len(g_bytes) > settings.max_file_bytes or len(b_bytes) > settings.max_file_bytes:
             raise HTTPException(status_code=413, detail="file too large")
 
-        gs = parse_gstr2b_json(g_bytes)
+        if (gstr2b.filename or "").lower().endswith(".xlsx"):
+            gs = parse_gstr2b_excel(g_bytes, period)
+        else:
+            gs = parse_gstr2b_json(g_bytes)
         bs = parse_books(b_bytes, books.filename or "books.csv")
         if len(gs) + len(bs) > settings.max_rows:
             raise HTTPException(status_code=413, detail="too many rows")
