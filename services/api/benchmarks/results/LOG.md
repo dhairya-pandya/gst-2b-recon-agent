@@ -18,6 +18,12 @@ Verdict counts at 20k are consistent with the planted mix (matched 16,200 = exac
 
 Round 2 numbers are the median of three runs on the same machine; the spread across the three runs was under 2%.
 
+| 3 | ba8d35c | Precompile invoice-number regexes and cache `canon_invoice` (profile showed it at 40% of match time: 183k module-level `re.sub`/`re.match` calls, and the same numbers canonicalised on both sides) | 20k | match (median of 3) | 251.9 | 192.2 | −24% |
+| 3 | ba8d35c | same | 20k | pipeline end-to-end (median of 3) | 444.1 | 369.7 | −17% |
+| 3 | ba8d35c | same | 20k | throughput, invoices/sec | 45,031 | 54,099 | +20% |
+
+Round 3's baseline (444.1 ms) is higher than round 2's result (425.1 ms); it was measured on a different day, and the cause of the gap was not isolated. Round 3's before and after runs were taken back to back on the same machine, so the delta compares like with like.
+
 ## Real-model run (Gemini 2.5 Flash, free tier)
 
 | Date | Commit | Size | LLM calls | Resolve stage | Pipeline | Throughput | Note |

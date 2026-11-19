@@ -24,6 +24,7 @@ Synthetic load only, fake LLM (no Vertex calls yet). Accuracy is not scored on s
 | 1 | Index books by PAN; compute keys once | 20k invoices | match | 1,522 ms | 222 ms |
 | 1 | same | 20k invoices | end-to-end pipeline | 1,912 ms | 613 ms |
 | 2 | Keep pipeline inputs out of checkpointed state | 20k invoices | end-to-end pipeline | 613 ms | 425 ms |
+| 3 | Precompile and cache invoice-number canonicalisation | 20k invoices | end-to-end pipeline | 444 ms | 370 ms |
 
 Reproduce: `cd services/api && uv run python -m benchmarks.run --size 20000`
 
