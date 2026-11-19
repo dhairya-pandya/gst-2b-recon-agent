@@ -1,12 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { ApiError, apiFetch } from "@/lib/api";
 import { validateClientInput } from "@/lib/client-form";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ui } from "@/lib/ui";
 
 type Client = { id: string; name: string; gstin: string };
+
+// Show what the API actually said, so the user knows whether to fix the form or sign in again.
+function saveErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return "Your sign-in has ended. Sign in again, then add the client.";
+    const detail = typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail);
+    return `The client was not saved (HTTP ${err.status}: ${detail}).`;
+  }
+  return "The client was not saved. The API could not be reached. Try again.";
+}
 
 export default function ClientsPage() {
   const [token, setToken] = useState<string | null>(null);
@@ -45,8 +55,8 @@ export default function ClientsPage() {
       setClients((prev) => [...(prev ?? []), created]);
       setName("");
       setGstin("");
-    } catch {
-      setError("The client was not saved. Check the GSTIN, which must be 15 characters, and try again.");
+    } catch (err) {
+      setError(saveErrorMessage(err));
     } finally {
       setBusy(false);
     }
