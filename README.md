@@ -41,7 +41,7 @@ Reproduce: `cd services/api && uv run python -m benchmarks.run --size 20000`
 | Legal corpus RAG | Built with a hash embedder; corpus text is paraphrased and awaits verification |
 | Web design system, sign-in page, clients page, new-run page, reconciliation table | Built, tested (21 web tests); sign-in page renders in the deployed app |
 | Google and email sign-in end to end | Email magic-link sign-in verified in the deployed app; session tokens (ES256) are checked against the project JWKS. Google OAuth client not configured |
-| Vertex AI calls and LLM benchmarks | Client written and unit-tested with a mock; no live calls run yet (needs GCP project) |
+| Live agent notes and review | Each run sends up to 5 flagged rows to Gemini 2.5 Flash for a cause and suggested action; a deterministic critic flags any figure not in the source rows. Agents never change a verdict; quota or errors leave rows unexplained and the run still completes. Reviewers accept or reject flagged rows; decisions are stored with the run. Deployed; live browser check pending |
 | Cloud Run deploy | API and web app deployed to Cloud Run (asia-south1). Verified in a browser: add a client, upload GSTR-2B, purchase register and an invoice PDF, get verdicts with reasons, reload from the database |
 
 ## Layout

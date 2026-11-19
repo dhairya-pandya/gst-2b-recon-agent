@@ -11,4 +11,5 @@ SUPABASE_URL=$(grep -E "^SUPABASE_URL=" services/api/.env | cut -d= -f2-)
 SUPABASE_ANON_KEY=$(grep -E "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" apps/web/.env.local | cut -d= -f2-)
 gcloud builds submit --project "$PROJECT" --config cloudbuild.yaml .
 gcloud run deploy gst-recon-api --project "$PROJECT" --image "$IMAGE" --region "$REGION" \
-  --update-env-vars "SUPABASE_URL=$SUPABASE_URL,SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" --quiet
+  --update-env-vars "SUPABASE_URL=$SUPABASE_URL,SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+  --update-secrets "GEMINI_API_KEY=gemini-api-key:latest" --quiet

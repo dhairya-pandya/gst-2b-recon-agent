@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { ReconRow, type ReconEntry } from "./recon-row";
 
 const gstr: ReconEntry = {
@@ -35,5 +35,37 @@ describe("ReconRow reasons", () => {
     render(<ReconRow verdict="partial" gstr2b={gstr} book={book} reasons={["invoice_total_mismatch", "amount_gap"]} />);
     expect(screen.getByText("Invoice PDF total differs")).toBeInTheDocument();
     expect(screen.getByText("Tax amounts differ")).toBeInTheDocument();
+  });
+
+  it("shows the agent note and records a review on a flagged row", () => {
+    const onReview = vi.fn();
+    render(
+      <ReconRow
+        verdict="partial"
+        gstr2b={gstr}
+        book={book}
+        agent={{ likely_cause: "amount", explanation: "PDF total differs.", suggested_action: "Ask the supplier.", problems: [] }}
+        onReview={onReview}
+      />,
+    );
+    expect(screen.getByText(/PDF total differs/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+    expect(onReview).toHaveBeenCalledWith("accept");
+  });
+
+  it("warns when the critic found problems", () => {
+    render(
+      <ReconRow
+        verdict="partial"
+        gstr2b={gstr}
+        agent={{ likely_cause: "amount", explanation: "Gap of 999.", suggested_action: "Check.", problems: ["amount not in source: 999"] }}
+      />,
+    );
+    expect(screen.getByText(/Verify before acting/)).toBeInTheDocument();
+  });
+
+  it("has no review controls on a matched row", () => {
+    render(<ReconRow verdict="matched" gstr2b={gstr} book={book} onReview={() => {}} />);
+    expect(screen.queryByRole("button", { name: "Accept" })).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import time
+from decimal import Decimal
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -7,10 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from app.agents.explain import explain_rows
+from app.agents.llm import LLM, VertexLLM
 from app.config import Settings
 from app.core.invoice_check import apply_invoice_checks, check_invoice
 from app.core.match import match
 from app.guard.auth import CurrentUser
+from app.guard.budget import Budget
 from app.guard.ratelimit import TokenBucket
 from app.guard.scope import in_scope
 from app.ingest.books import parse_books
@@ -39,13 +43,21 @@ def _row_key(row: dict[str, Any]) -> str:
 MAX_INVOICES = 200
 
 
+def _key_of(r: Any) -> str:
+    src = r.gstr2b or r.book
+    return f"{src.supplier_gstin}|{src.invoice_no}" if src else "none"
+
+
 class ClientIn(BaseModel):
     name: str
     gstin: str
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, llm: LLM | None = None) -> FastAPI:
     settings = settings or Settings()
+    if llm is None and settings.gemini_api_key:
+        llm = VertexLLM(api_key=settings.gemini_api_key)
+    budget = Budget(settings.firm_daily_tokens, Decimal(settings.firm_daily_inr))
     app = FastAPI(title="GST 2B Recon API")
     app.state.settings = settings
     app.state.store = Store()
@@ -154,6 +166,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         run = store.add_run(firm, client["id"], period)
         results = apply_invoice_checks(match(gs, bs, period), inv_docs)
+        explained, agent_status = await explain_rows(llm, results, budget, str(firm))
         counts: dict[str, int] = {}
         for r in results:
             counts[r.verdict.value] = counts.get(r.verdict.value, 0) + 1
@@ -162,12 +175,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "status": "completed",
                 "counts_by_verdict": counts,
                 "invoices": inv_docs,
+                "agent_status": agent_status,
                 "rows": [
                     {
                         "verdict": r.verdict.value,
                         "reasons": r.reasons,
                         "gstr2b": r.gstr2b.model_dump(mode="json") if r.gstr2b else None,
                         "book": r.book.model_dump(mode="json") if r.book else None,
+                        "agent": explained.get(_key_of(r)),
                     }
                     for r in results
                 ],
@@ -186,6 +201,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": run["status"],
             "counts_by_verdict": run.get("counts_by_verdict", {}),
             "invoices": run.get("invoices", []),
+            "agent_status": run.get("agent_status", "off"),
+            "reviews": run.get("reviews", []),
         }
 
     @app.post("/runs/{run_id}/ask")

@@ -15,3 +15,5 @@ class Settings(BaseSettings):
     max_rows: int = 50_000
     firm_daily_tokens: int = 200_000
     firm_daily_inr: str = "50"
+    # Gemini Developer API key. Empty disables the live agent step.
+    gemini_api_key: str = ""

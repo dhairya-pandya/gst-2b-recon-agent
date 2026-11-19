@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ReconRow, type ReconEntry } from "./recon-row";
+import { ReconRow, type AgentNote, type Decision, type ReconEntry } from "./recon-row";
 import { type Verdict } from "./verdict-stamp";
 import { ui } from "@/lib/ui";
 
@@ -10,6 +10,15 @@ export type RunRow = {
   gstr2b?: ReconEntry;
   book?: ReconEntry;
   reasons?: string[];
+  key?: string;
+  agent?: AgentNote | null;
+};
+
+type Props = {
+  rows: RunRow[];
+  decisions?: Record<string, Decision>;
+  onReview?: (key: string, d: Decision) => void;
+  busyKey?: string | null;
 };
 
 const FILTERS: { verdict: Verdict | "all"; label: string }[] = [
@@ -20,7 +29,7 @@ const FILTERS: { verdict: Verdict | "all"; label: string }[] = [
   { verdict: "duplicate", label: "Duplicate" },
 ];
 
-export function ReconTable({ rows }: { rows: RunRow[] }) {
+export function ReconTable({ rows, decisions = {}, onReview, busyKey }: Props) {
   const [filter, setFilter] = useState<Verdict | "all">("all");
 
   const counts = useMemo(() => {
@@ -29,7 +38,12 @@ export function ReconTable({ rows }: { rows: RunRow[] }) {
     return c;
   }, [rows]);
 
-  const visible = filter === "all" ? rows : rows.filter((r) => r.verdict === filter);
+  const visible =
+    filter === "all"
+      ? rows
+      : filter === "missing_in_2b"
+        ? rows.filter((r) => r.verdict === "missing_in_2b" || r.verdict === "missing_in_books")
+        : rows.filter((r) => r.verdict === filter);
 
   return (
     <section className="grid gap-4">
@@ -70,7 +84,17 @@ export function ReconTable({ rows }: { rows: RunRow[] }) {
           <p className="p-4 text-body">No invoices have this verdict in this run.</p>
         ) : (
           visible.map((r, i) => (
-            <ReconRow key={i} verdict={r.verdict} gstr2b={r.gstr2b} book={r.book} reasons={r.reasons} />
+            <ReconRow
+              key={r.key ?? i}
+              verdict={r.verdict}
+              gstr2b={r.gstr2b}
+              book={r.book}
+              reasons={r.reasons}
+              agent={r.agent}
+              decision={r.key ? decisions[r.key] : undefined}
+              onReview={onReview && r.key ? (d) => onReview(r.key as string, d) : undefined}
+              reviewBusy={busyKey === r.key}
+            />
           ))
         )}
       </div>
