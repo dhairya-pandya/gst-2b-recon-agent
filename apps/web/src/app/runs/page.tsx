@@ -10,23 +10,27 @@ import { ui } from "@/lib/ui";
 // Without this step the page has no session and every request fails.
 export default function RunsIndex() {
   const router = useRouter();
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = new URL(window.location.href).searchParams.get("code");
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+    const hasHashTokens = url.hash.includes("access_token");
     const supabase = supabaseBrowser();
 
     async function finish() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          setFailed(true);
+          setFailed(`Code exchange failed: ${error.message}`);
           return;
         }
       }
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        setFailed(true);
+        setFailed(
+          `No session found. code in link: ${code ? "yes" : "no"}; token in link: ${hasHashTokens ? "yes" : "no"}.`,
+        );
         return;
       }
       router.replace("/runs/new");
@@ -38,8 +42,9 @@ export default function RunsIndex() {
   if (failed) {
     return (
       <main className="mx-auto grid w-full max-w-md gap-4 px-8 py-12">
-        <h1 className={ui.heading}>This sign-in link has expired</h1>
-        <p className="text-body">Request a new sign-in link and open it in this browser.</p>
+        <h1 className={ui.heading}>This sign-in link did not work</h1>
+        <p className="text-body">Request a new sign-in link and open it in this same browser.</p>
+        <p className={ui.hint}>{failed}</p>
         <div>
           <a href="/sign-in" className={ui.primary}>Back to sign in</a>
         </div>
