@@ -1,8 +1,8 @@
 import time
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -18,6 +18,7 @@ from app.ingest.gstr2b import parse_gstr2b_json
 from app.ingest.invoices import extract_invoice
 from app.models import IngestError
 from app.store import Store
+from app.store_rest import RestStore
 
 
 class AskIn(BaseModel):
@@ -69,7 +70,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
 
-    store: Store = app.state.store
+    def get_store(
+        request: Request, authorization: Annotated[str | None, Header()] = None
+    ) -> Store | RestStore:
+        """Supabase-backed store when configured (production); in-memory otherwise (tests)."""
+        s: Settings = request.app.state.settings
+        if s.supabase_url and s.supabase_anon_key and authorization:
+            return RestStore(
+                s.supabase_url, s.supabase_anon_key, authorization.removeprefix("Bearer ")
+            )
+        mem: Store = request.app.state.store
+        return mem
+
+    StoreDep = Annotated[Store | RestStore, Depends(get_store)]
     limiter = TokenBucket(capacity=60, refill_per_sec=1.0)
 
     @app.middleware("http")
@@ -84,18 +97,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return await call_next(request)
 
     @app.post("/clients", status_code=201)
-    def create_client(body: ClientIn, user: CurrentUser) -> dict[str, Any]:
+    def create_client(body: ClientIn, user: CurrentUser, store: StoreDep) -> dict[str, Any]:
         firm = store.firm_for(user)
         rec = store.add_client(firm, body.name, body.gstin)
         return {**rec, "id": str(rec["id"])}
 
     @app.get("/clients")
-    def list_clients(user: CurrentUser) -> list[dict[str, Any]]:
+    def list_clients(user: CurrentUser, store: StoreDep) -> list[dict[str, Any]]:
         return [{**c, "id": str(c["id"])} for c in store.clients_for(store.firm_for(user))]
 
     @app.post("/runs", status_code=201)
     async def create_run(
         user: CurrentUser,
+        store: StoreDep,
         client_id: str = Form(...),
         period: str = Form(...),
         gstr2b: UploadFile = File(...),
@@ -159,10 +173,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ],
             }
         )
+        store.save_run(run)
         return {"run_id": str(run["id"]), "status": "completed"}
 
     @app.get("/runs/{run_id}")
-    def get_run(run_id: str, user: CurrentUser) -> dict[str, Any]:
+    def get_run(run_id: str, user: CurrentUser, store: StoreDep) -> dict[str, Any]:
         run = store.run_in(store.firm_for(user), UUID(run_id))
         if run is None:
             raise HTTPException(status_code=404, detail="run not found")
@@ -174,7 +189,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.post("/runs/{run_id}/ask")
-    def ask_row(run_id: str, body: AskIn, user: CurrentUser) -> dict[str, Any]:
+    def ask_row(run_id: str, body: AskIn, user: CurrentUser, store: StoreDep) -> dict[str, Any]:
         row_key = body.row_key
         run = store.run_in(store.firm_for(user), UUID(run_id))
         if run is None:
@@ -190,17 +205,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.post("/runs/{run_id}/reviews", status_code=201)
-    def review_row(run_id: str, body: ReviewIn, user: CurrentUser) -> dict[str, str]:
+    def review_row(
+        run_id: str, body: ReviewIn, user: CurrentUser, store: StoreDep
+    ) -> dict[str, str]:
         run = store.run_in(store.firm_for(user), UUID(run_id))
         if run is None:
             raise HTTPException(status_code=404, detail="run not found")
         run.setdefault("reviews", []).append(
             {"row_key": body.row_key, "decision": body.decision, "by": user}
         )
+        store.save_run(run)
         return {"status": "recorded"}
 
     @app.get("/runs/{run_id}/rows")
-    def get_rows(run_id: str, user: CurrentUser) -> list[dict[str, Any]]:
+    def get_rows(run_id: str, user: CurrentUser, store: StoreDep) -> list[dict[str, Any]]:
         run = store.run_in(store.firm_for(user), UUID(run_id))
         if run is None:
             raise HTTPException(status_code=404, detail="run not found")

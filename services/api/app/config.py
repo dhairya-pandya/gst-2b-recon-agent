@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     # Project URL, used to fetch the JWKS for asymmetric (ES256/RS256) session tokens.
     supabase_url: str = ""
+    # Public anon key; with the user's token it lets the API query Supabase under RLS.
+    supabase_anon_key: str = ""
     web_origin: str = "http://localhost:3000"
     max_file_bytes: int = 10 * 1024 * 1024
     max_pdfs: int = 200

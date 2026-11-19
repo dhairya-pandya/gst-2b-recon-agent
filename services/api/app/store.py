@@ -38,6 +38,9 @@ class Store:
         self.runs[rid] = rec
         return rec
 
+    def save_run(self, run: dict[str, Any]) -> None:
+        """Runs are mutated in place in memory; nothing to persist."""
+
     def run_in(self, firm: str, rid: UUID) -> dict[str, Any] | None:
         r = self.runs.get(rid)
         return r if r and r["firm_id"] == firm else None
