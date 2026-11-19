@@ -29,3 +29,11 @@ describe("ReconRow", () => {
     expect(screen.getByText("No book entry")).toBeInTheDocument();
   });
 });
+
+describe("ReconRow reasons", () => {
+  it("shows plain-language reasons under the stamp", () => {
+    render(<ReconRow verdict="partial" gstr2b={gstr} book={book} reasons={["invoice_total_mismatch", "amount_gap"]} />);
+    expect(screen.getByText("Invoice PDF total differs")).toBeInTheDocument();
+    expect(screen.getByText("Tax amounts differ")).toBeInTheDocument();
+  });
+});

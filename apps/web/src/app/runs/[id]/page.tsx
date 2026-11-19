@@ -8,6 +8,7 @@ import { ui } from "@/lib/ui";
 
 type RawRow = {
   verdict: RunRow["verdict"];
+  reasons?: string[];
   gstr2b: null | { invoice_no: string; invoice_date: string; taxable_value: string;
     tax: Record<string, string> };
   book: null | { invoice_no: string; invoice_date: string; taxable_value: string;
@@ -49,6 +50,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
           verdict: r.verdict,
           gstr2b: toEntry(r.gstr2b),
           book: toEntry(r.book),
+          reasons: r.reasons ?? [],
         })));
       } catch {
         setError("Could not load this run. Check that the run exists and try again.");

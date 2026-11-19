@@ -9,6 +9,7 @@ export type RunRow = {
   verdict: Verdict;
   gstr2b?: ReconEntry;
   book?: ReconEntry;
+  reasons?: string[];
 };
 
 const FILTERS: { verdict: Verdict | "all"; label: string }[] = [
@@ -69,7 +70,7 @@ export function ReconTable({ rows }: { rows: RunRow[] }) {
           <p className="p-4 text-body">No invoices have this verdict in this run.</p>
         ) : (
           visible.map((r, i) => (
-            <ReconRow key={i} verdict={r.verdict} gstr2b={r.gstr2b} book={r.book} />
+            <ReconRow key={i} verdict={r.verdict} gstr2b={r.gstr2b} book={r.book} reasons={r.reasons} />
           ))
         )}
       </div>
