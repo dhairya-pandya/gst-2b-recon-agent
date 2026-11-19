@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AuthGuard } from "@/components/auth-guard";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 const NAV = [
@@ -45,7 +46,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className="flex flex-1 flex-col">
+        <AuthGuard>{children}</AuthGuard>
+      </div>
     </div>
   );
 }
