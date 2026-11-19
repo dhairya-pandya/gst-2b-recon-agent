@@ -58,3 +58,30 @@ def test_unreadable_invoice_422(client: TestClient, auth: dict[str, Any]) -> Non
         "/runs", data={"client_id": cid, "period": "2026-11"}, files=files, headers=auth
     )
     assert r.status_code == 422
+
+
+def test_invoice_total_mismatch_downgrades_matched_row(
+    client: TestClient, auth: dict[str, Any]
+) -> None:
+    cid = _create_client(client, auth)
+    pdf = _pdf(
+        [
+            "Tax Invoice",
+            "Invoice No: ABC/101",
+            "Supplier GSTIN: 29AAACB1234F1Z5",
+            "Total: 1,250.00",
+            "Padding text so the page is not treated as a scan by the extractor.",
+        ]
+    )
+    files = [*_files().items(), ("invoices", ("abc101.pdf", pdf, "application/pdf"))]
+    r = client.post(
+        "/runs", data={"client_id": cid, "period": "2026-11"}, files=files, headers=auth
+    )
+    assert r.status_code == 201, r.text
+    run_id = r.json()["run_id"]
+    inv = client.get(f"/runs/{run_id}", headers=auth).json()["invoices"][0]
+    assert inv["total_check"] == "total_mismatch"
+    rows = client.get(f"/runs/{run_id}/rows", headers=auth).json()
+    row = next(x for x in rows if x["book"] and x["book"]["invoice_no"] == "ABC/101")
+    assert row["verdict"] == "partial"
+    assert "invoice_total_mismatch" in row["reasons"]

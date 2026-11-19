@@ -57,3 +57,22 @@ def test_missing_invoice_number_not_checked() -> None:
 def test_missing_total_reported() -> None:
     r = check_invoice(doc("INV-1", None), [book(7, "INV-1")])
     assert r["total_check"] == "no_total_in_invoice"
+
+
+def test_apply_checks_downgrades_matched_and_keeps_partial() -> None:
+    from app.core.invoice_check import apply_invoice_checks
+    from app.core.match import MatchResult, Verdict
+
+    matched = MatchResult(verdict=Verdict.MATCHED, book=book(1, "INV-1"))
+    partial = MatchResult(verdict=Verdict.PARTIAL, book=book(2, "INV-2"), reasons=["amount_gap"])
+    untouched = MatchResult(verdict=Verdict.MATCHED, book=book(3, "INV-3"))
+    checks: list[dict[str, object]] = [
+        {"book_row_id": 1, "total_check": "total_mismatch"},
+        {"book_row_id": 2, "total_check": "total_mismatch"},
+        {"book_row_id": 3, "total_check": "ok"},
+    ]
+    apply_invoice_checks([matched, partial, untouched], checks)
+    assert matched.verdict == Verdict.PARTIAL and matched.reasons == ["invoice_total_mismatch"]
+    assert partial.verdict == Verdict.PARTIAL
+    assert partial.reasons == ["amount_gap", "invoice_total_mismatch"]
+    assert untouched.verdict == Verdict.MATCHED and untouched.reasons == []

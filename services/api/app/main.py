@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from app.config import Settings
-from app.core.invoice_check import check_invoice
+from app.core.invoice_check import apply_invoice_checks, check_invoice
 from app.core.match import match
 from app.guard.auth import CurrentUser
 from app.guard.ratelimit import TokenBucket
@@ -139,7 +139,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
 
         run = store.add_run(firm, client["id"], period)
-        results = match(gs, bs, period)
+        results = apply_invoice_checks(match(gs, bs, period), inv_docs)
         counts: dict[str, int] = {}
         for r in results:
             counts[r.verdict.value] = counts.get(r.verdict.value, 0) + 1

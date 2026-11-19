@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Any
 
 from app.core.normalise import canon_invoice
 from app.ingest.invoices import InvoiceDoc
@@ -36,3 +37,22 @@ def check_invoice(doc: InvoiceDoc, books: list[BookRow]) -> dict[str, object]:
         "total_check": "ok" if gap <= TOTAL_TOLERANCE else "total_mismatch",
         "total_gap": str(gap),
     }
+
+
+def apply_invoice_checks(results: list[Any], checks: list[dict[str, object]]) -> list[Any]:
+    """Downgrade rows whose invoice PDF total disagrees with the book.
+
+    A Matched row becomes Partial with reason ``invoice_total_mismatch``; rows that already
+    need review keep their verdict and gain the reason. Returns the same list.
+    """
+    from app.core.match import Verdict
+
+    bad = {c["book_row_id"] for c in checks if c.get("total_check") == "total_mismatch"}
+    for r in results:
+        if r.book is None or r.book.row_id not in bad:
+            continue
+        if "invoice_total_mismatch" not in r.reasons:
+            r.reasons = [*r.reasons, "invoice_total_mismatch"]
+        if r.verdict == Verdict.MATCHED:
+            r.verdict = Verdict.PARTIAL
+    return results
