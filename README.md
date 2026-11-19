@@ -36,13 +36,13 @@ Reproduce: `cd services/api && uv run python -m benchmarks.run --size 20000`
 | Normalisation and matcher | Built, tested |
 | LangGraph pipeline, budgets, checkpoints | Built, tested (fake LLM) |
 | Guardrails (scope, PII, rate limit, injection stripping) | Built, tested as logic; not yet wired into all HTTP routes |
-| Auth, run, row-question and review endpoints | Built, tested; run data still in memory (not yet on Postgres) |
+| Auth, run, row-question and review endpoints | Built, tested. Clients and runs persist in Supabase through its REST API with the user's own token, so row-level security scopes every query |
 | Supabase schema and row-level security | Built and verified against a local Supabase: 4 RLS tests pass (cross-firm reads and writes blocked) |
 | Legal corpus RAG | Built with a hash embedder; corpus text is paraphrased and awaits verification |
 | Web design system, sign-in page, clients page, new-run page, reconciliation table | Built, tested (21 web tests); sign-in page renders in the deployed app |
-| Google and email sign-in end to end | Email and Google flows are coded; not yet exercised end to end. Google OAuth client not configured |
+| Google and email sign-in end to end | Email magic-link sign-in verified in the deployed app; session tokens (ES256) are checked against the project JWKS. Google OAuth client not configured |
 | Vertex AI calls and LLM benchmarks | Client written and unit-tested with a mock; no live calls run yet (needs GCP project) |
-| Cloud Run deploy | API and web app deployed to Cloud Run (asia-south1). Auth rejects requests without a token; CORS allows the web origin |
+| Cloud Run deploy | API and web app deployed to Cloud Run (asia-south1). Verified in a browser: add a client, upload GSTR-2B, purchase register and an invoice PDF, get verdicts with reasons, reload from the database |
 
 ## Layout
 
