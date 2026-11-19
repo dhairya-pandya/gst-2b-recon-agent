@@ -1,8 +1,12 @@
-# GST 2B Recon Agent
+# Milaan
 
-Multi-agent system that reconciles a client's GSTR-2B against its purchase register and invoice PDFs, flags ITC mismatches, and drafts supplier follow-ups. Built for Indian CA firms.
+**Live:** https://milaan-321997950255.asia-south1.run.app
 
-**Status:** backend, database security (row-level security verified locally), web app and benchmark harness built and tested. The API and web app are deployed to Cloud Run. Google sign-in and live Vertex AI calls are not yet verified — see the status table below.
+Milaan (Hindi for "match") reconciles a client's GSTR-2B against its purchase register and invoice PDFs, explains every mismatch, and records the reviewer's decision before input tax credit is claimed. Built for Indian CA firms.
+
+The whole product runs at one URL: the Next.js app serves the site and proxies `/api/*` server-side to the FastAPI service on Cloud Run, so the browser never talks to a second origin. Sign in with an email link and try it with the synthetic sample files linked from the home page.
+
+**Status:** deployed and verified end to end in a browser, including live Gemini notes and row review. Google sign-in is not configured; see the status table below.
 
 ## Problem
 

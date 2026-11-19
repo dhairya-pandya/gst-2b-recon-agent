@@ -1,0 +1,26 @@
+{
+  "data": {
+    "gstin": "27AAPFU0939F1ZV",
+    "rtnprd": "112026",
+    "docdata": {
+      "b2b": [
+        {
+          "ctin": "29AAACB1234F1Z5",
+          "inv": [
+            {"inum": "ABC/101", "idt": "05-11-2026", "val": 1180,
+             "items": [{"itm_det": {"txval": 1000, "iamt": 180, "camt": 0, "samt": 0, "csamt": 0}}]},
+            {"inum": "ABC/102", "idt": "07-11-2026", "val": 2360,
+             "items": [{"itm_det": {"txval": 2000, "iamt": 0, "camt": 180, "samt": 180, "csamt": 0}}]}
+          ]
+        },
+        {
+          "ctin": "07AABCU9603R1ZX",
+          "inv": [
+            {"inum": "XY-7", "idt": "10-11-2026", "val": 590,
+             "items": [{"itm_det": {"txval": 500, "iamt": 90, "camt": 0, "samt": 0, "csamt": 0}}]}
+          ]
+        }
+      ]
+    }
+  }
+}

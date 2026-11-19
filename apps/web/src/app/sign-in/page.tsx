@@ -19,5 +19,11 @@ export default function SignInPage() {
   const origin = useSyncExternalStore(noop, () => window.location.origin, () => "");
 
   if (!auth) return <p className="p-8">Loading sign-in…</p>;
-  return <SignInForm auth={auth} redirectTo={`${origin}/runs`} />;
+  return (
+    <SignInForm
+      auth={auth}
+      redirectTo={`${origin}/runs`}
+      google={process.env.NEXT_PUBLIC_GOOGLE_SIGN_IN === "true"}
+    />
+  );
 }

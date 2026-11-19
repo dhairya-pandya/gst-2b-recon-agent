@@ -58,7 +58,7 @@ def create_app(settings: Settings | None = None, llm: LLM | None = None) -> Fast
     if llm is None and settings.gemini_api_key:
         llm = VertexLLM(api_key=settings.gemini_api_key)
     budget = Budget(settings.firm_daily_tokens, Decimal(settings.firm_daily_inr))
-    app = FastAPI(title="GST 2B Recon API")
+    app = FastAPI(title="Milaan API")
     app.state.settings = settings
     app.state.store = Store()
     app.add_middleware(

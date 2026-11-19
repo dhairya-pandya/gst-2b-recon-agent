@@ -65,7 +65,7 @@ export default function ClientsPage() {
   return (
     <main className="mx-auto grid w-full max-w-3xl gap-10 px-8 py-12">
       <header className="grid gap-2">
-        <h1 className={ui.heading}>Clients</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">Clients</h1>
         <p className="text-body">A client is a business whose GSTR-2B you reconcile.</p>
       </header>
 

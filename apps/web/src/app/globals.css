@@ -1,41 +1,87 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Single source for color, type, spacing and radius.
- * Every component uses these names; no raw hex values outside this file.
+ * Milaan design tokens. Single source for color, type and radius.
+ * Ink and paper come from the GST office: indigo register ink on ruled paper.
+ * Verdict colours are the only accents, and they always mean a verdict.
  */
 @theme {
   --color-ink: #23306b;
+  --color-ink-soft: #4a5490;
   --color-paper: #f7f8f6;
+  --color-sheet: #ffffff;
   --color-rule: #d9dcd4;
   --color-matched: #1e6b47;
   --color-check: #a86a12;
   --color-missing: #a3261f;
 
-  --font-sans: var(--font-commissioner), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --radius-input: 2px;
-  --radius-panel: 6px;
+  --radius-input: 0.5rem;
+  --radius-panel: 1rem;
   --radius-stamp: 999px;
 
-  --text-caption: 0.8125rem;
-  --text-body: 0.9375rem;
-  --text-lead: 1.0625rem;
-  --text-heading: 1.3125rem;
-  --text-display: 1.6875rem;
-  --text-title: 2.125rem;
+  /* Legacy names used by app screens, mapped onto Tailwind's scale. */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.75rem;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-display: 1.5rem;
+  --text-title: 2.25rem;
+
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p, li, dd {
+  text-wrap: pretty;
 }
 
 /* One focus treatment for every control. */
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
+}
+
+/* Hero ledger: each verdict stamp lands once, in row order. */
+@keyframes stamp-in {
+  0% { opacity: 0; transform: scale(1.6) rotate(-4deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-4deg); }
+}
+.stamp-land {
+  opacity: 0;
+  animation: stamp-in 700ms var(--ease-fluid) forwards;
+}
+
+/* Scroll reveal: heavy fade up, driven by IntersectionObserver. */
+.reveal {
+  opacity: 0;
+  transform: translateY(4rem);
+  filter: blur(12px);
+  transition: opacity 900ms var(--ease-fluid), transform 900ms var(--ease-fluid), filter 900ms var(--ease-fluid);
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 /* Respect reduced motion: no transitions or animations anywhere. */
@@ -48,4 +94,15 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .reveal { opacity: 1; transform: none; filter: none; }
+}
+
+/* Mobile menu links rise out of an invisible box, staggered by inline delay. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(3rem); }
+  to { opacity: 1; transform: none; }
+}
+.menu-item {
+  opacity: 0;
+  animation: rise 700ms var(--ease-fluid) forwards;
 }

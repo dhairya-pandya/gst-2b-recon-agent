@@ -62,7 +62,7 @@ export function ReconTable({ rows, decisions = {}, onReview, busyKey }: Props) {
               type="button"
               aria-pressed={pressed}
               onClick={() => setFilter(f.verdict)}
-              className={`rounded-input border px-3 py-1 text-caption ${
+              className={`rounded-full border px-3 py-2 text-sm font-semibold transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                 pressed ? "border-ink bg-ink font-medium text-paper" : "border-rule hover:border-ink"
               }`}
             >

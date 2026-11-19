@@ -12,11 +12,16 @@ function fakeAuth(): AuthClient & { signInWithOtp: ReturnType<typeof vi.fn>; sig
 describe("SignInForm", () => {
   it("starts Google sign-in", () => {
     const auth = fakeAuth();
-    render(<SignInForm auth={auth} redirectTo="http://x/runs" />);
+    render(<SignInForm auth={auth} redirectTo="http://x/runs" google />);
     fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
     expect(auth.signInWithOAuth).toHaveBeenCalledWith(
       expect.objectContaining({ provider: "google" }),
     );
+  });
+
+  it("hides Google sign-in until it is configured", () => {
+    render(<SignInForm auth={fakeAuth()} redirectTo="http://x/runs" />);
+    expect(screen.queryByRole("button", { name: "Continue with Google" })).not.toBeInTheDocument();
   });
 
   it("sends an email magic link and confirms", async () => {

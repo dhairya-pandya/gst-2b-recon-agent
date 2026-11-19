@@ -42,7 +42,7 @@ export default function RunsIndex() {
   if (failed) {
     return (
       <main className="mx-auto grid w-full max-w-md gap-4 px-8 py-12">
-        <h1 className={ui.heading}>This sign-in link did not work</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">This sign-in link did not work</h1>
         <p className="text-body">Request a new sign-in link and open it in this same browser.</p>
         <p className={ui.hint}>{failed}</p>
         <div>

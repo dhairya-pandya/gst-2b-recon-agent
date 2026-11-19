@@ -120,7 +120,7 @@ export function ReconRow({
                       disabled={reviewBusy}
                       aria-pressed={decision === "accept"}
                       onClick={() => onReview("accept")}
-                      className="rounded-input border border-matched px-3 py-1 text-caption text-matched hover:bg-matched hover:text-paper disabled:opacity-50"
+                      className="rounded-full border border-matched px-3 py-1 text-caption text-matched hover:bg-matched hover:text-paper disabled:opacity-50"
                     >
                       Accept
                     </button>
@@ -129,7 +129,7 @@ export function ReconRow({
                       disabled={reviewBusy}
                       aria-pressed={decision === "reject"}
                       onClick={() => onReview("reject")}
-                      className="rounded-input border border-missing px-3 py-1 text-caption text-missing hover:bg-missing hover:text-paper disabled:opacity-50"
+                      className="rounded-full border border-missing px-3 py-1 text-caption text-missing hover:bg-missing hover:text-paper disabled:opacity-50"
                     >
                       Reject
                     </button>

@@ -72,7 +72,7 @@ export default function NewRunPage() {
   return (
     <main className="mx-auto grid w-full max-w-2xl gap-8 px-8 py-12">
       <header className="grid gap-2">
-        <h1 className={ui.heading}>New reconciliation</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">New reconciliation</h1>
         <p className="text-body">Upload one client&apos;s files for one return period.</p>
       </header>
 

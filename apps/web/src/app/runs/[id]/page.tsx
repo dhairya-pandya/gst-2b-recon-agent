@@ -115,7 +115,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   return (
     <main className="mx-auto grid w-full max-w-5xl gap-6 px-8 py-12">
       <header className="grid gap-2">
-        <h1 className={ui.heading}>Reconciliation</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">Reconciliation</h1>
         {rows && (
           <p className="text-body">
             {rows.length} {rows.length === 1 ? "invoice" : "invoices"} compared.{" "}

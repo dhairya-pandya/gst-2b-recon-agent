@@ -16,7 +16,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch(path: string, opts: ApiOptions): Promise<unknown> {
-  const base = opts.base ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  const base = opts.base ?? process.env.NEXT_PUBLIC_API_URL ?? "/api";
   const headers: Record<string, string> = { Authorization: `Bearer ${opts.token}` };
   let body: BodyInit | undefined = opts.body;
   if (opts.json !== undefined) {

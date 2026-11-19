@@ -9,15 +9,12 @@ steps:
       - NEXT_PUBLIC_SUPABASE_URL=${_SUPABASE_URL}
       - --build-arg
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${_SUPABASE_ANON_KEY}
-      - --build-arg
-      - NEXT_PUBLIC_API_URL=${_API_URL}
       - -t
       - ${_IMAGE}
       - .
 images:
   - ${_IMAGE}
 substitutions:
-  _IMAGE: asia-south1-docker.pkg.dev/project-1299407e-7d72-48ba-8bb/gst-recon/web:latest
-  _API_URL: https://gst-recon-api-321997950255.asia-south1.run.app
+  _IMAGE: asia-south1-docker.pkg.dev/project-1299407e-7d72-48ba-8bb/gst-recon/milaan-web:latest
 options:
   logging: CLOUD_LOGGING_ONLY
